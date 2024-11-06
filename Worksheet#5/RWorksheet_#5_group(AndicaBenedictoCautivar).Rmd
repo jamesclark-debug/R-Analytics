@@ -1,0 +1,74 @@
+---
+title: "RWorksheet#5"
+author: "Andica, Benedicto, Cautivar"
+date: "2024-11-06"
+output: pdf_document
+---
+Extracting Amazon Product Reviews
+4. Select 5 categories from Amazon and select 30 products from each category.
+```{r}
+library(polite)
+
+url <- 'https://www.imdb.com/chart/toptv/?ref_=nv_tvv_250'
+
+session <- bow(url,
+               user_agent = "Educational")
+session
+```
+```{r}
+library(rvest)
+library(httr)
+library(dplyr)
+
+title_list <- scrape(session) %>%
+   html_nodes('h3.ipc-title__text') %>% 
+  html_text
+  
+class(title_list)
+
+head(title_list)
+tail(title_list)
+
+title_list_sub <- as.data.frame(title_list[2:25])
+title_list_sub
+
+colnames(title_list_sub) <- "Ranks"
+split_df <- strsplit(as.character(title_list_sub$Ranks),".",fixed = TRUE)
+split_df <- data.frame(do.call(rbind,split_df))
+
+colnames(split_df) <- c("Ranks","Title") 
+split_df
+
+ratings <- scrape(session) %>%
+   html_nodes('span.ipc-rating-star--rating') %>% 
+  html_text
+
+ratings 
+
+numberOfPeopleVoted <- scrape(session) %>%
+   html_nodes('span.ipc-rating-star--voteCount') %>% 
+  html_text
+
+cleanedVotes <- gsub('[\\"()]', '', numberOfPeopleVoted)
+
+cleanedVotes
+
+numEpisodes <- scrape(session) %>%
+   html_nodes('span.sc-5bc66c50-6.OOdsw.cli-title-metadata-item:nth-of-type(2)') %>% 
+  html_text
+
+numEpisodes
+
+Year <- scrape(session) %>%
+   html_nodes('span.sc-5bc66c50-6.OOdsw.cli-title-metadata-item:nth-of-type(1)') %>% 
+  html_text
+
+
+
+bindedDF <- cbind(split_df, ratings, cleanedVotes, numEpisodes, Year)
+bindedDF
+```
+
+
+
+g
