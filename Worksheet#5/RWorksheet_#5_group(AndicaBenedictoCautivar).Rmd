@@ -4,8 +4,8 @@ author: "Andica, Benedicto, Cautivar"
 date: "2024-11-06"
 output: pdf_document
 ---
-Extracting Amazon Product Reviews
-4. Select 5 categories from Amazon and select 30 products from each category.
+Extracting IMDB. 
+1.
 ```{r}
 library(polite)
 
@@ -65,7 +65,7 @@ topShows <- cbind(titleAndRank, ratingsDf, cleanedVotesDf, numEpisodesDf, YearDf
   
 topShows 
 ```
-
+1. PART II
 ```{r}
 homePage <- 'https://www.imdb.com/chart/toptv/'
 mainPage <- read_html(homePage)
@@ -108,7 +108,80 @@ allShows <- cbind(topShows, showUrlDf)
 allShows 
 ```
 
+Extracting Amazon Product Reviews
+4.
+```{r}
+library(rvest)
+library(httr)
+library(dplyr)
+library(polite)
+library(stringr)
+
+urls <- c('https://www.amazon.com/s?k=backpacks&crid=35ZQ1H72MC3G9&sprefix=backpacks%2Caps%2C590&ref=nb_sb_ss_ts-doa-p_3_9', 
+          'https://www.amazon.com/s?k=laptops&crid=L7MQBW7MD4SX&sprefix=laptopb%2Caps%2C1304&ref=nb_sb_noss_2',
+          'https://www.amazon.com/s?k=phone+case&dc&crid=1VPDCJ87S93TL&sprefix=phone+cas%2Caps%2C451&ref=a9_asc_1',
+          'https://www.amazon.com/s?k=mountain+bike&crid=1ZQR71S8XHZN6&sprefix=mountain+bik%2Caps%2C499&ref=nb_sb_noss_2',
+          'https://www.amazon.com/s?k=tshirt&crid=2RQIP7MP6IYAW&sprefix=tshirt%2Caps%2C443&ref=nb_sb_noss_2')
+
+```
+```{r}
+df <- list()
+
+for (i in seq_along(urls)) {
+  
+    sessions <- bow(urls[i], user_agent = "Educational")
+  
+  productName <- scrape(sessions) %>%
+    html_nodes('h2.a-size-mini') %>% 
+    html_text() %>%
+    head(30) 
+
+  
+  productDescription <- scrape(sessions) %>%
+    html_nodes('div.productDescription') %>% 
+    html_text() %>%
+    head(30) 
+  
+
+  productRating <- scrape(sessions) %>%
+    html_nodes('span.a-icon-alt') %>% 
+    html_text() %>%
+    head(30)  
+  
+  ratings <- as.numeric(str_extract(productRating, "\\d+\\.\\d"))
+  
+  
+  productPrice <- scrape(sessions) %>%
+    html_nodes('span.a-price') %>% 
+    html_text() %>%
+    head(30) 
+  price <- as.numeric(str_extract(productPrice, "\\d+\\.\\d+"))
+  
+  
+  productReview <- scrape(sessions) %>%
+    html_nodes('div.review-text-content') %>% 
+    html_text() %>%
+    head(30)  
+  
+  
+  dfAma <- data.frame(Product_Name = productName[1:30],
+                       Description = productDescription[1:30],
+                       Rating = ratings[1:30],
+                       Price = price[1:30],
+                       stringsAsFactors = FALSE)
+  
+  df[[i]] <- dfAma
+}
+```
+```{r}
+print(df[[1]])
+print(df[[2]])
+print(df[[3]])
+print(df[[4]])
+print(df[[5]])
+```
+```
 
 
 
-g
+
