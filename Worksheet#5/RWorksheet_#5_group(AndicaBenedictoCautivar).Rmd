@@ -5,7 +5,8 @@ date: "2024-11-06"
 output: pdf_document
 ---
 Extracting IMDB. 
-1.
+1. Each group needs to extract the top 50 tv shows in Imdb.com. It will include the rank, the title of the
+tv show, tv rating, the number of people who voted, the number of episodes, the year it was released.
 ```{r}
 library(polite)
 
@@ -66,6 +67,8 @@ topShows <- cbind(titleAndRank, ratingsDf, cleanedVotesDf, numEpisodesDf, YearDf
 topShows 
 ```
 1. PART II
+It will also include the number of user reviews and the number of critic reviews, as well as the popularity
+rating for each tv shows.
 ```{r}
 homePage <- 'https://www.imdb.com/chart/toptv/'
 mainPage <- read_html(homePage)
@@ -106,6 +109,88 @@ showUrlDf
 
 allShows <- cbind(topShows, showUrlDf)
 allShows 
+```
+2.From the 50 tv shows, select at least 5 tv shows to scrape 20 user reviews that will include the reviewer’s
+name, date of reviewed, user rating, title of the review, the numbers for “is helpful” and “is not helpful”,
+and text reviews.
+```{r}
+library(rvest)
+library(dplyr)
+
+urlsOfFiveShows <- c(
+  "https://www.imdb.com/title/tt0903747/reviews/?ref_=ttexr_ql_2",
+  "https://www.imdb.com/title/tt5491994/reviews/?ref_=tt_ov_ql_2",
+  "https://www.imdb.com/title/tt0185906/reviews/?ref_=tt_ov_ql_2",
+  "https://www.imdb.com/title/tt7366338/reviews/?ref_=tt_ov_ql_2",
+  "https://www.imdb.com/title/tt0944947/reviews/?ref_=tt_ov_ql_2"
+)
+
+fiveShowsUrlDf <- data.frame(
+  Title = c(
+    "Breaking Bad",
+    "Planet Earth II",
+    "Band of Brothers",
+    "Chernobyl", 
+    "Game of Thrones"
+  ),
+  URLs = urlsOfFiveShows
+) 
+
+scrapeReviews <- function(show_url) {
+  page <- read_html(show_url)
+  
+  userNames <- page %>%
+    html_nodes('[data-testid="author-link"]') %>%
+    html_text()
+  
+   reviewDates <- page %>%
+    html_nodes('li.review-date') %>%
+    html_text()
+   
+     userRating <- page %>%
+    html_nodes('span.ipc-rating-star--rating') %>%
+    html_text()
+
+     revTitle <- page %>%
+    html_nodes('h3.ipc-title__text') %>%
+    html_text()
+     
+     helpfulRev <- page %>%
+    html_nodes('span.count--up') %>%
+    html_text()
+     
+      notHelpful <- page %>%
+    html_nodes('span.count--down') %>%
+    html_text()
+    
+       data.frame(Usernames = head(userNames, 20), Dates = head(reviewDates, 20), userRating = head(userRating, 20), Review_Title = head(revTitle, 20))
+}
+
+reviews_data <- lapply(fiveShowsUrlDf$URLs, scrapeReviews)
+names(reviews_data) <- fiveShowsUrlDf$Title
+reviews_data[["Breaking Bad"]]
+reviews_data[["Planet Earth II"]]
+reviews_data[["Band of Brothers"]]
+reviews_data[["Chernobyl"]]
+reviews_data[["Game of Thrones"]]
+```
+3.Create a time series graph for the tv shows released by year. Which year has the most number of tv
+shows released?
+```{r}
+library(ggplot2)
+years <- substr(Year, 1,4)
+years <- as.numeric(Year)      
+
+ggplot(data.frame(Year = years), aes(x = Year)) +
+  geom_line(stat = "count", fill = "skyblue", color = "green") +
+  labs(title = "Number of TV Shows Released by Year",
+       x = "Year",
+       y = "Number of TV Shows") +
+  theme_minimal()
+
+mostShowsYear <- as.data.frame(table(Year))
+mostShowsYear <- mostShowsYear[which.max(mostShowsYear$Freq), ]
+print(mostShowsYear)
 ```
 
 Extracting Amazon Product Reviews
