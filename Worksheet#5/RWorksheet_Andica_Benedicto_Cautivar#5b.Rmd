@@ -1,0 +1,36 @@
+---
+title: "RWorksheet_#5b"
+author: "Andica, Benedicto, Cautivar"
+date: "2024-11-20"
+output: pdf_document
+---
+
+```{r}
+urls <- c('https://www.amazon.com/s?k=backpacks&crid=35ZQ1H72MC3G9&sprefix=backpacks%2Caps%2C590&ref=nb_sb_ss_ts-doa-p_3_9', 
+          'https://www.amazon.com/s?k=laptops&crid=L7MQBW7MD4SX&sprefix=laptopb%2Caps%2C1304&\ref=nb_sb_noss_2',
+          'https://www.amazon.com/s?k=phone+case&dc&crid=1VPDCJ87S93TL&sprefix=phone+cas%2Caps%2C451&ref=a9_asc_1',
+          'https://www.amazon.com/s?k=mountain+bike&crid=1ZQR71S8XHZN6&sprefix=mountain+bik%2Caps%2C499&ref=nb_sb_noss_2',
+          'https://www.amazon.com/s?k=tshirt&crid=2RQIP7MP6IYAW&sprefix=tshirt%2Caps%2C443&ref=nb_sb_noss_2')
+
+library(polite)
+library(rvest)
+library(httr)
+library(dplyr)
+
+df10 <- list()
+
+for (i in seq_along(urls)) {
+  
+    sessions <- bow(urls[i], user_agent = "Educational")
+  
+  productName <- scrape(sessions) %>%
+    html_nodes('h2.a-size-mini') %>% 
+    html_text() %>%
+    head(10) 
+}
+
+amazon <- data.frame(Product_Name = productName[1:10])
+df10[[i]] <- amazon
+```
+
+
