@@ -27,6 +27,9 @@ title_list <- scrape(session) %>%
   
 title_list_sub <- as.data.frame(title_list[2:26])
 
+title_list_sub
+```
+```{r}
 colnames(title_list_sub) <- "Ranks"
 split_df <- strsplit(as.character(title_list_sub$Ranks),".",fixed = TRUE)
 split_df <- data.frame(do.call(rbind,split_df))
@@ -35,13 +38,18 @@ colnames(split_df) <- c("Ranks","Title")
 
 titleAndRank <- data.frame(split_df)
 
-
+titleAndRank
+```
+```{r}
 ratings <- scrape(session) %>%
    html_nodes('span.ipc-rating-star--rating') %>% 
   html_text
 
 ratingsDf <- data.frame(ratings)
 
+ratingsDf
+```
+```{r}
 numberOfPeopleVoted <- scrape(session) %>%
    html_nodes('span.ipc-rating-star--voteCount') %>% 
   html_text
@@ -50,22 +58,33 @@ cleanedVotes <- gsub('[()]', '', numberOfPeopleVoted)
 
 cleanedVotesDf <- data.frame(cleanedVotes)
 
+cleanedVotesDf
+```
+```{r}
 numEpisodes <- scrape(session) %>%
    html_nodes('span.sc-5bc66c50-6.OOdsw.cli-title-metadata-item:nth-of-type(2)') %>% 
   html_text
 
 numEpisodesDf <- data.frame(numEpisodes)
 
+numEpisodesDf
+```
+```{r}
 Year <- scrape(session) %>%
    html_nodes('span.sc-5bc66c50-6.OOdsw.cli-title-metadata-item:nth-of-type(1)') %>% 
   html_text
 
 YearDf <- data.frame(Year)
 
+YearDf
+```
+```{r}
 topShows <- cbind(titleAndRank, ratingsDf, cleanedVotesDf, numEpisodesDf, YearDf)
   
 topShows 
 ```
+
+
 1. PART II
 It will also include the number of user reviews and the number of critic reviews, as well as the popularity
 rating for each tv shows.
@@ -265,8 +284,85 @@ print(df[[3]])
 print(df[[4]])
 print(df[[5]])
 ```
+6. The data that we've extracted are 5 different categories of products from Amazon which are Backpacks, Laptops, Phone Accessories, Sports, and Clothing. We took 30 products in each categories, extracted their price, description, ratings, and reviews.
+
+7. The extracted data will be used to analyze product trends, support consumer decisions by comparing prices and ratings, and provide market insights into pricing strategies and customer preferences across various categories.
+
+8. 
+```{r}
+library(dplyr)
+library(ggplot2)
+
+df_cleaned <- Filter(function(x) !is.null(x) && is.data.frame(x), df)
+
+# Combine the data frames
+df_combined <- do.call(rbind, df_cleaned)
+
+df_combined$Category <- rep(c("Backpacks", "Laptops", "Phone Cases", "Mountain Bikes", "T-shirts"), 
+                            each = nrow(df_cleaned[[1]]))
+
+df_combined <- df_combined %>%
+  filter(!is.na(Price) & !is.na(Rating))
+
+ggplot(df_combined, aes(x = Category, y = Price)) +
+  geom_boxplot(fill = "lightblue") +
+  theme_minimal() +
+  labs(title = "Price Distribution by Category", x = "Category", y = "Price")
+
+avg_ratings <- df_combined %>%
+  group_by(Category) %>%
+  summarise(Average_Rating = mean(Rating, na.rm = TRUE))
+
+ggplot(avg_ratings, aes(x = Category, y = Average_Rating, fill = Category)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  labs(title = "Average Rating by Category", x = "Category", y = "Average Rating")
+
+
+ggplot(df_combined, aes(x = Price, y = Rating, color = Category)) +
+  geom_point(size = 2) +
+  theme_minimal() +
+  labs(title = "Price vs. Rating", x = "Price", y = "Rating")
+
 ```
 
+9.
+```{r}
+library(dplyr)
+
+category_summary <- df_combined %>%
+  group_by(Category) %>%
+  summarise(
+    avg_rating = mean(Rating, na.rm = TRUE),
+    avg_price = mean(Price, na.rm = TRUE),
+    rating_to_price_ratio = avg_rating / avg_price
+  )
+
+
+barplot(
+  category_summary$rating_to_price_ratio,
+  names.arg = category_summary$Category,
+  main = "Rating to Price Ratio by Category",
+  ylab = "Rating to Price Ratio",
+  col =  rainbow(nrow(category_summary)),
+  las = 2  
+)
+```
+10.
+```{r}
+
+ranked_df <- df_combined %>%
+  group_by(Category) %>%
+  arrange(desc(Rating), Price) %>%
+  mutate(Rank = row_number())
+
+
+top_ranked <- ranked_df %>%
+  filter(Rank <= 5)
+
+print(top_ranked)
+
+```
 
 
 
