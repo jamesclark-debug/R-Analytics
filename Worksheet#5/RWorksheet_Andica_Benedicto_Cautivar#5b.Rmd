@@ -6,31 +6,139 @@ output: pdf_document
 ---
 
 ```{r}
+library(rvest)
+library(httr)
+library(dplyr)
+library(polite)
+library(stringr)
+
 urls <- c('https://www.amazon.com/s?k=backpacks&crid=35ZQ1H72MC3G9&sprefix=backpacks%2Caps%2C590&ref=nb_sb_ss_ts-doa-p_3_9', 
-          'https://www.amazon.com/s?k=laptops&crid=L7MQBW7MD4SX&sprefix=laptopb%2Caps%2C1304&\ref=nb_sb_noss_2',
+          'https://www.amazon.com/s?k=laptops&crid=L7MQBW7MD4SX&sprefix=laptopb%2Caps%2C1304&ref=nb_sb_noss_2',
           'https://www.amazon.com/s?k=phone+case&dc&crid=1VPDCJ87S93TL&sprefix=phone+cas%2Caps%2C451&ref=a9_asc_1',
           'https://www.amazon.com/s?k=mountain+bike&crid=1ZQR71S8XHZN6&sprefix=mountain+bik%2Caps%2C499&ref=nb_sb_noss_2',
           'https://www.amazon.com/s?k=tshirt&crid=2RQIP7MP6IYAW&sprefix=tshirt%2Caps%2C443&ref=nb_sb_noss_2')
 
-library(polite)
-library(rvest)
-library(httr)
-library(dplyr)
-
-df10 <- list()
+urls
+```
+```{r}
+df <- list()
+reviews <- list()
 
 for (i in seq_along(urls)) {
   
-    sessions <- bow(urls[i], user_agent = "Educational")
+    session <- bow(urls[i], user_agent = "Educational")
   
-  productName <- scrape(sessions) %>%
+  product_name <- scrape(session) %>%
     html_nodes('h2.a-size-mini') %>% 
     html_text() %>%
-    head(10) 
+    head(30) 
+
+  
+  product_description <- scrape(session) %>%
+    html_nodes('div.productDescription') %>% 
+    html_text() %>%
+    head(30) 
+  
+
+  product_rating <- scrape(session) %>%
+    html_nodes('span.a-icon-alt') %>% 
+    html_text() %>%
+    head(30)  
+  ratings <- as.numeric(str_extract(product_rating, "\\d+\\.\\d"))
+  
+  
+  product_price <- scrape(session) %>%
+    html_nodes('span.a-price') %>% 
+    html_text() %>%
+    head(30) 
+  price <- as.numeric(str_extract(product_price, "\\d+\\.\\d+"))
+  
+  
+  dfTemp <- data.frame(Product_Name = product_name[1:30],
+                       Description = product_description[1:30],
+                       Rating = ratings[1:30],
+                       Price = price[1:30],
+                       stringsAsFactors = FALSE)
+  
+  df[[i]] <- dfTemp
+```
+```{r}
+selectTenProducts <- head(product_name, 10)
+  
+   for (j in seq_along(selectTenProducts)) {
+   
+    
+    reviewers <- scrape(session) %>%
+      html_nodes('div.a-profile-content') %>%
+      html_text() %>%
+      head(20)
+    
+    reviewDates <- scrape(session) %>%
+      html_nodes('span.review-date') %>%
+      html_text() %>%
+      head(20)
+    
+    dateOnly <- str_extract(revieDates, "[A-Za-z]+ \\d{1,2}, \\d{4}")
+    reviewDatedParsed <- as.Date(dateOnly, format = "%B %d, %Y")
+    
+    
+    revieRatings <- scrape(session) %>%
+      html_nodes('i.review-rating') %>%
+      html_text() %>%
+      head(20)
+    
+    individualRatings <- as.numeric(str_extract(reviewRatings, "\\d+\\.\\d"))
+    
+    reviewTitles <- scrape(session) %>%
+      html_nodes('span.a-letter-space') %>%
+      html_text() %>%
+      head(20)
+    
+    reviewTexts <- scrape(session) %>%
+      html_nodes('span.review-text') %>%
+      html_text() %>%
+      head(20)
+    
+    verifiedStatus <- scrape(session) %>%
+      html_nodes('span.a-class-mini') %>%
+      html_text() %>%
+      head(20)
+    
+    
+    reviewsTemp <- data.frame(
+      Reviewer = reviewers[1:20],
+      Date = reviewDatesParsed[1:20],
+      Rating = individualRatings[1:20],
+      Title = reviewTitles[1:20],
+      Review = reviewTexts[1:20],
+      Verified = verifiedStatus[1:20],
+      stringsAsFactors = FALSE
+    )
+    
+    reviews[[j]] <- reviewsTemp
+  }
+  
 }
 
-amazon <- data.frame(Product_Name = productName[1:10])
-df10[[i]] <- amazon
+
+```
+```{r}
+print(df[[1]])
+print(df[[2]])
+print(df[[3]])
+print(df[[4]])
+print(df[[5]])
+
+print(reviews[[1]])
+print(reviews[[2]])
+print(reviews[[3]])
+print(reviews[[4]])
+print(reviews[[5]])
+print(reviews[[6]])
+print(reviews[[7]])
+print(reviews[[8]])
+print(reviews[[9]])
+print(reviews[[10]])
 ```
 
 
