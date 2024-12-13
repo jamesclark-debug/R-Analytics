@@ -1,0 +1,271 @@
+---
+title: "RWorksheet_#5b"
+author: "Andica, Benedicto, Cautivar"
+date: "2024-11-20"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+library(rvest)
+library(httr)
+library(dplyr)
+library(polite)
+library(stringr)
+<<<<<<< HEAD
+library(xml2)
+
+url <- "https://www.amazon.com/"
+session <- bow(url, 
+               user_agent = "Educational")
+session
+=======
+
+>>>>>>> 733f51dfd76a926826176d1f4a63381ba0f113ae
+urls <- c('https://www.amazon.com/s?k=backpacks&crid=35ZQ1H72MC3G9&sprefix=backpacks%2Caps%2C590&ref=nb_sb_ss_ts-doa-p_3_9', 
+          'https://www.amazon.com/s?k=laptops&crid=L7MQBW7MD4SX&sprefix=laptopb%2Caps%2C1304&ref=nb_sb_noss_2',
+          'https://www.amazon.com/s?k=phone+case&dc&crid=1VPDCJ87S93TL&sprefix=phone+cas%2Caps%2C451&ref=a9_asc_1',
+          'https://www.amazon.com/s?k=mountain+bike&crid=1ZQR71S8XHZN6&sprefix=mountain+bik%2Caps%2C499&ref=nb_sb_noss_2',
+          'https://www.amazon.com/s?k=tshirt&crid=2RQIP7MP6IYAW&sprefix=tshirt%2Caps%2C443&ref=nb_sb_noss_2')
+
+<<<<<<< HEAD
+```
+# Codes per Category
+```{r}
+backpackLinks <- read_html(urls[1]) %>%
+    html_nodes("a.a-link-normal.s-underline-text.s-underline-link-text.s-link-style.a-text-normal") %>%
+    html_attr("href") %>%
+    unique() %>%
+    paste0("https://www.amazon.com", .)
+laptopLinks <- read_html(urls[2]) %>%
+    html_nodes("a.a-link-normal.s-underline-text.s-underline-link-text.s-link-style.a-text-normal") %>%
+    html_attr("href") %>%
+    unique() %>%
+    paste0("https://www.amazon.com", .)
+accessoriesLinks <- read_html(urls[3]) %>%
+    html_nodes("a.a-link-normal.s-underline-text.s-underline-link-text.s-link-style.a-text-normal") %>%
+    html_attr("href") %>%
+    unique() %>%
+    paste0("https://www.amazon.com", .)
+sportsLinks <- read_html(urls[4]) %>%
+    html_nodes("a.a-link-normal.s-underline-text.s-underline-link-text.s-link-style.a-text-normal") %>%
+    html_attr("href") %>%
+    unique() %>%
+    paste0("https://www.amazon.com", .)
+clothingLinks <- read_html(urls[5]) %>%
+    html_nodes("a.a-link-normal.s-underline-text.s-underline-link-text.s-link-style.a-text-normal") %>%
+    html_attr("href") %>%
+    unique() %>%
+    paste0("https://www.amazon.com", .)
+productCategoryLinks <- data.frame(
+  Backpacks = backpackLinks[1:10],
+  Laptops = laptopLinks[1:10],
+  Accessories = accessoriesLinks[1:10],
+  Sports = sportsLinks[1:10],
+  Clothing = clothingLinks[1:10]
+)
+productCategoryLinks
+```
+
+```{r}
+backpackProductsLink <- productCategoryLinks$Backpacks
+laptopProductsLink <- productCategoryLinks$Laptops
+accessoriesProductsLink <- productCategoryLinks$Accessories
+sportsProductsLink <- productCategoryLinks$Sports
+clothingProductsLink <- productCategoryLinks$Clothing
+```
+=======
+urls
+```
+```{r}
+df <- list()
+reviews <- list()
+>>>>>>> 733f51dfd76a926826176d1f4a63381ba0f113ae
+
+```{r}
+scrapeReviews <- function(url) {
+  page <- read_html(url)
+                 
+  productName <- page %>%
+    html_nodes(".a-size-large.product-title-word-break") %>%
+    html_text(trim = T) %>%
+    strsplit(" ") %>%                
+    .[[1]] %>%                       
+    .[1:4] %>%
+    gsub("\\,", "", .) %>%
+    paste(collapse = " ")  
+  
+  userNameReviews <- page %>%
+    html_nodes(".a-profile-name") %>%
+     unique()
+  
+<<<<<<< HEAD
+  reviewDates <- page %>%
+    html_nodes(".a-size-base.a-color-secondary.review-date") %>%
+    html_text() %>%
+     gsub(".*on ", "", .)
+  
+  reviewerRating <- page %>%
+    html_nodes(".a-icon-alt") %>%
+    html_text() %>%
+     gsub(" out.*", "", .) %>%
+    .[grepl("^[0-9.]+$", .)] %>% 
+    as.numeric()
+  
+  reviewTitle <- page %>%
+    html_nodes(".a-size-base.a-link-normal.review-title.a-color-base.review-title-content.a-text-bold span:nth-of-type(2)") %>%
+    html_text()
+  
+  textReviews <- page %>%
+    html_nodes(".a-expander-content.reviewText.review-text-content.a-expander-partial-collapse-content") %>%
+    html_text(trim = TRUE)
+  data.frame(
+    Product_Name = rep(productName, 20),
+    Reviewer_Names = userNameReviews[2:21],
+    Review_Date = reviewDates[1:20],
+    Individual_Ratings = reviewerRating[1:20],
+    Review_Title = reviewTitle[1:20],
+    Text_Reviews = textReviews[1:20]
+    )
+=======
+    session <- bow(urls[i], user_agent = "Educational")
+  
+  product_name <- scrape(session) %>%
+    html_nodes('h2.a-size-mini') %>% 
+    html_text() %>%
+    head(30) 
+
+  
+  product_description <- scrape(session) %>%
+    html_nodes('div.productDescription') %>% 
+    html_text() %>%
+    head(30) 
+  
+
+  product_rating <- scrape(session) %>%
+    html_nodes('span.a-icon-alt') %>% 
+    html_text() %>%
+    head(30)  
+  ratings <- as.numeric(str_extract(product_rating, "\\d+\\.\\d"))
+  
+  
+  product_price <- scrape(session) %>%
+    html_nodes('span.a-price') %>% 
+    html_text() %>%
+    head(30) 
+  price <- as.numeric(str_extract(product_price, "\\d+\\.\\d+"))
+  
+  
+  dfTemp <- data.frame(Product_Name = product_name[1:30],
+                       Description = product_description[1:30],
+                       Rating = ratings[1:30],
+                       Price = price[1:30],
+                       stringsAsFactors = FALSE)
+  
+  df[[i]] <- dfTemp
+```
+```{r}
+selectTenProducts <- head(product_name, 10)
+  
+   for (j in seq_along(selectTenProducts)) {
+   
+    
+    reviewers <- scrape(session) %>%
+      html_nodes('div.a-profile-content') %>%
+      html_text() %>%
+      head(20)
+    
+    reviewDates <- scrape(session) %>%
+      html_nodes('span.review-date') %>%
+      html_text() %>%
+      head(20)
+    
+    dateOnly <- str_extract(revieDates, "[A-Za-z]+ \\d{1,2}, \\d{4}")
+    reviewDatedParsed <- as.Date(dateOnly, format = "%B %d, %Y")
+    
+    
+    revieRatings <- scrape(session) %>%
+      html_nodes('i.review-rating') %>%
+      html_text() %>%
+      head(20)
+    
+    individualRatings <- as.numeric(str_extract(reviewRatings, "\\d+\\.\\d"))
+    
+    reviewTitles <- scrape(session) %>%
+      html_nodes('span.a-letter-space') %>%
+      html_text() %>%
+      head(20)
+    
+    reviewTexts <- scrape(session) %>%
+      html_nodes('span.review-text') %>%
+      html_text() %>%
+      head(20)
+    
+    verifiedStatus <- scrape(session) %>%
+      html_nodes('span.a-class-mini') %>%
+      html_text() %>%
+      head(20)
+    
+    
+    reviewsTemp <- data.frame(
+      Reviewer = reviewers[1:20],
+      Date = reviewDatesParsed[1:20],
+      Rating = individualRatings[1:20],
+      Title = reviewTitles[1:20],
+      Review = reviewTexts[1:20],
+      Verified = verifiedStatus[1:20],
+      stringsAsFactors = FALSE
+    )
+    
+    reviews[[j]] <- reviewsTemp
+  }
+  
+>>>>>>> 733f51dfd76a926826176d1f4a63381ba0f113ae
+}
+bagReviews <- lapply(backpackProductsLink, scrapeReviews)
+laptopReviews <- lapply(laptopProductsLink, scrapeReviews)
+accessoriesReviews <- lapply(accessoriesProductsLink, scrapeReviews)
+sportsReviews <- lapply(sportsProductsLink, scrapeReviews)
+clothingReviews <- lapply(clothingProductsLink, scrapeReviews)
+```
+
+<<<<<<< HEAD
+```{r}
+backpackReviewsDf <- do.call(rbind, bagReviews)
+laptopReviewsDf <- do.call(rbind, laptopReviews)
+accessoriesReviewsDf <- do.call(rbind, accessoriesReviews)
+sportsReviewsDf <- do.call(rbind, sportsReviews)
+clothingReviewsDf <- do.call(rbind, clothingReviews)
+=======
+
+```
+```{r}
+print(df[[1]])
+print(df[[2]])
+print(df[[3]])
+print(df[[4]])
+print(df[[5]])
+
+print(reviews[[1]])
+print(reviews[[2]])
+print(reviews[[3]])
+print(reviews[[4]])
+print(reviews[[5]])
+print(reviews[[6]])
+print(reviews[[7]])
+print(reviews[[8]])
+print(reviews[[9]])
+print(reviews[[10]])
+>>>>>>> 733f51dfd76a926826176d1f4a63381ba0f113ae
+```
+
+```{r}
+print(backpackReviewsDf)
+print(laptopReviewsDf)
+print(accessoriesReviewsDf)
+print(sportsReviewsDf)
+print(clothingReviewsDf)
+```
+

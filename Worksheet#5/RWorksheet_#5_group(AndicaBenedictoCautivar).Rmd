@@ -4,8 +4,9 @@ author: "Andica, Benedicto, Cautivar"
 date: "2024-11-06"
 output: pdf_document
 ---
-Extracting Amazon Product Reviews
-4. Select 5 categories from Amazon and select 30 products from each category.
+Extracting IMDB. 
+1. Each group needs to extract the top 50 tv shows in Imdb.com. It will include the rank, the title of the
+tv show, tv rating, the number of people who voted, the number of episodes, the year it was released.
 ```{r}
 library(polite)
 
@@ -24,51 +25,344 @@ title_list <- scrape(session) %>%
    html_nodes('h3.ipc-title__text') %>% 
   html_text
   
-class(title_list)
+title_list_sub <- as.data.frame(title_list[2:26])
 
-head(title_list)
-tail(title_list)
-
-title_list_sub <- as.data.frame(title_list[2:25])
 title_list_sub
-
+```
+```{r}
 colnames(title_list_sub) <- "Ranks"
 split_df <- strsplit(as.character(title_list_sub$Ranks),".",fixed = TRUE)
 split_df <- data.frame(do.call(rbind,split_df))
 
 colnames(split_df) <- c("Ranks","Title") 
-split_df
 
+titleAndRank <- data.frame(split_df)
+
+titleAndRank
+```
+```{r}
 ratings <- scrape(session) %>%
    html_nodes('span.ipc-rating-star--rating') %>% 
   html_text
 
-ratings 
+ratingsDf <- data.frame(ratings)
 
+ratingsDf
+```
+```{r}
 numberOfPeopleVoted <- scrape(session) %>%
    html_nodes('span.ipc-rating-star--voteCount') %>% 
   html_text
 
-cleanedVotes <- gsub('[\\"()]', '', numberOfPeopleVoted)
+cleanedVotes <- gsub('[()]', '', numberOfPeopleVoted)
 
-cleanedVotes
+cleanedVotesDf <- data.frame(cleanedVotes)
 
+cleanedVotesDf
+```
+```{r}
 numEpisodes <- scrape(session) %>%
    html_nodes('span.sc-5bc66c50-6.OOdsw.cli-title-metadata-item:nth-of-type(2)') %>% 
   html_text
 
-numEpisodes
+numEpisodesDf <- data.frame(numEpisodes)
 
+numEpisodesDf
+```
+```{r}
 Year <- scrape(session) %>%
    html_nodes('span.sc-5bc66c50-6.OOdsw.cli-title-metadata-item:nth-of-type(1)') %>% 
   html_text
 
+YearDf <- data.frame(Year)
+
+YearDf
+```
+```{r}
+topShows <- cbind(titleAndRank, ratingsDf, cleanedVotesDf, numEpisodesDf, YearDf)
+  
+topShows 
+```
 
 
-bindedDF <- cbind(split_df, ratings, cleanedVotes, numEpisodes, Year)
-bindedDF
+1. PART II
+It will also include the number of user reviews and the number of critic reviews, as well as the popularity
+rating for each tv shows.
+```{r}
+homePage <- 'https://www.imdb.com/chart/toptv/'
+mainPage <- read_html(homePage)
+
+links <- mainPage %>%
+  html_nodes("a.ipc-title-link-wrapper") %>%
+  html_attr("href")
+
+showInfo <- lapply(links, function(link) {
+  fullLink <- paste0("https://imdb.com", link)
+
+  userRevLink <- read_html(fullLink)
+  userRevPageLink <-  userRevLink  %>%
+    html_nodes('a.isReview') %>%
+    html_attr("href")
+  
+  criticRev <- userRevLink %>%
+              html_nodes("span.score") %>%
+              html_text()
+  criticDf <- data.frame(Critic_Reviews = criticRev[2], stringsAsFactors = FALSE)
+  
+  popularityRating <-  userRevLink %>%
+              html_nodes('[data-testid="hero-rating-bar__popularity__score"]') %>%
+              html_text()
+  
+  userRev <- read_html(paste0("https://imdb.com",  userRevPageLink[1]))
+  userRevCount <- userRev %>%
+    html_nodes('[data-testid="tturv-total-reviews"]') %>%
+    html_text()
+
+  return(data.frame(User_Reviews = userRevCount, Critic = criticDf, Popularity_Rating = popularityRating)) 
+})
+
+
+
+showUrlDf <- do.call(rbind, showInfo)
+showUrlDf
+
+allShows <- cbind(topShows, showUrlDf)
+allShows 
+```
+2.From the 50 tv shows, select at least 5 tv shows to scrape 20 user reviews that will include the reviewer’s
+name, date of reviewed, user rating, title of the review, the numbers for “is helpful” and “is not helpful”,
+and text reviews.
+```{r}
+library(rvest)
+library(dplyr)
+
+urlsOfFiveShows <- c(
+  "https://www.imdb.com/title/tt0903747/reviews/?ref_=ttexr_ql_2",
+  "https://www.imdb.com/title/tt5491994/reviews/?ref_=tt_ov_ql_2",
+  "https://www.imdb.com/title/tt0185906/reviews/?ref_=tt_ov_ql_2",
+  "https://www.imdb.com/title/tt7366338/reviews/?ref_=tt_ov_ql_2",
+  "https://www.imdb.com/title/tt0944947/reviews/?ref_=tt_ov_ql_2"
+)
+
+fiveShowsUrlDf <- data.frame(
+  Title = c(
+    "Breaking Bad",
+    "Planet Earth II",
+    "Band of Brothers",
+    "Chernobyl", 
+    "Game of Thrones"
+  ),
+  URLs = urlsOfFiveShows
+) 
+
+scrapeReviews <- function(show_url) {
+  page <- read_html(show_url)
+  
+  userNames <- page %>%
+    html_nodes('[data-testid="author-link"]') %>%
+    html_text()
+  
+   reviewDates <- page %>%
+    html_nodes('li.review-date') %>%
+    html_text()
+   
+     userRating <- page %>%
+    html_nodes('span.ipc-rating-star--rating') %>%
+    html_text()
+
+     revTitle <- page %>%
+    html_nodes('h3.ipc-title__text') %>%
+    html_text()
+     
+     helpfulRev <- page %>%
+    html_nodes('span.count--up') %>%
+    html_text()
+     
+      notHelpful <- page %>%
+    html_nodes('span.count--down') %>%
+    html_text()
+    
+       data.frame(Usernames = head(userNames, 20), Dates = head(reviewDates, 20), userRating = head(userRating, 20), Review_Title = head(revTitle, 20))
+}
+
+reviews_data <- lapply(fiveShowsUrlDf$URLs, scrapeReviews)
+names(reviews_data) <- fiveShowsUrlDf$Title
+reviews_data[["Breaking Bad"]]
+reviews_data[["Planet Earth II"]]
+reviews_data[["Band of Brothers"]]
+reviews_data[["Chernobyl"]]
+reviews_data[["Game of Thrones"]]
+```
+3.Create a time series graph for the tv shows released by year. Which year has the most number of tv
+shows released?
+```{r}
+library(ggplot2)
+years <- substr(Year, 1,4)
+years <- as.numeric(Year)      
+
+ggplot(data.frame(Year = years), aes(x = Year)) +
+  geom_line(stat = "count", fill = "skyblue", color = "green") +
+  labs(title = "Number of TV Shows Released by Year",
+       x = "Year",
+       y = "Number of TV Shows") +
+  theme_minimal()
+
+mostShowsYear <- as.data.frame(table(Year))
+mostShowsYear <- mostShowsYear[which.max(mostShowsYear$Freq), ]
+print(mostShowsYear)
+```
+
+Extracting Amazon Product Reviews
+4.
+```{r}
+library(rvest)
+library(httr)
+library(dplyr)
+library(polite)
+library(stringr)
+
+urls <- c('https://www.amazon.com/s?k=backpacks&crid=35ZQ1H72MC3G9&sprefix=backpacks%2Caps%2C590&ref=nb_sb_ss_ts-doa-p_3_9', 
+          'https://www.amazon.com/s?k=laptops&crid=L7MQBW7MD4SX&sprefix=laptopb%2Caps%2C1304&ref=nb_sb_noss_2',
+          'https://www.amazon.com/s?k=phone+case&dc&crid=1VPDCJ87S93TL&sprefix=phone+cas%2Caps%2C451&ref=a9_asc_1',
+          'https://www.amazon.com/s?k=mountain+bike&crid=1ZQR71S8XHZN6&sprefix=mountain+bik%2Caps%2C499&ref=nb_sb_noss_2',
+          'https://www.amazon.com/s?k=tshirt&crid=2RQIP7MP6IYAW&sprefix=tshirt%2Caps%2C443&ref=nb_sb_noss_2')
+
+```
+```{r}
+df <- list()
+
+for (i in seq_along(urls)) {
+  
+    sessions <- bow(urls[i], user_agent = "Educational")
+  
+  productName <- scrape(sessions) %>%
+    html_nodes('h2.a-size-mini') %>% 
+    html_text() %>%
+    head(30) 
+
+  
+  productDescription <- scrape(sessions) %>%
+    html_nodes('div.productDescription') %>% 
+    html_text() %>%
+    head(30) 
+  
+
+  productRating <- scrape(sessions) %>%
+    html_nodes('span.a-icon-alt') %>% 
+    html_text() %>%
+    head(30)  
+  
+  ratings <- as.numeric(str_extract(productRating, "\\d+\\.\\d"))
+  
+  
+  productPrice <- scrape(sessions) %>%
+    html_nodes('span.a-price') %>% 
+    html_text() %>%
+    head(30) 
+  price <- as.numeric(str_extract(productPrice, "\\d+\\.\\d+"))
+  
+  
+  productReview <- scrape(sessions) %>%
+    html_nodes('div.review-text-content') %>% 
+    html_text() %>%
+    head(30)  
+  
+  
+  dfAma <- data.frame(Product_Name = productName[1:30],
+                       Description = productDescription[1:30],
+                       Rating = ratings[1:30],
+                       Price = price[1:30],
+                       stringsAsFactors = FALSE)
+  
+  df[[i]] <- dfAma
+}
+```
+```{r}
+print(df[[1]])
+print(df[[2]])
+print(df[[3]])
+print(df[[4]])
+print(df[[5]])
+```
+6. The data that we've extracted are 5 different categories of products from Amazon which are Backpacks, Laptops, Phone Accessories, Sports, and Clothing. We took 30 products in each categories, extracted their price, description, ratings, and reviews.
+
+7. The extracted data will be used to analyze product trends, support consumer decisions by comparing prices and ratings, and provide market insights into pricing strategies and customer preferences across various categories.
+
+8. 
+```{r}
+library(dplyr)
+library(ggplot2)
+
+df_cleaned <- Filter(function(x) !is.null(x) && is.data.frame(x), df)
+
+# Combine the data frames
+df_combined <- do.call(rbind, df_cleaned)
+
+df_combined$Category <- rep(c("Backpacks", "Laptops", "Phone Cases", "Mountain Bikes", "T-shirts"), 
+                            each = nrow(df_cleaned[[1]]))
+
+df_combined <- df_combined %>%
+  filter(!is.na(Price) & !is.na(Rating))
+
+ggplot(df_combined, aes(x = Category, y = Price)) +
+  geom_boxplot(fill = "lightblue") +
+  theme_minimal() +
+  labs(title = "Price Distribution by Category", x = "Category", y = "Price")
+
+avg_ratings <- df_combined %>%
+  group_by(Category) %>%
+  summarise(Average_Rating = mean(Rating, na.rm = TRUE))
+
+ggplot(avg_ratings, aes(x = Category, y = Average_Rating, fill = Category)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  labs(title = "Average Rating by Category", x = "Category", y = "Average Rating")
+
+
+ggplot(df_combined, aes(x = Price, y = Rating, color = Category)) +
+  geom_point(size = 2) +
+  theme_minimal() +
+  labs(title = "Price vs. Rating", x = "Price", y = "Rating")
+
+```
+
+9.
+```{r}
+library(dplyr)
+
+category_summary <- df_combined %>%
+  group_by(Category) %>%
+  summarise(
+    avg_rating = mean(Rating, na.rm = TRUE),
+    avg_price = mean(Price, na.rm = TRUE),
+    rating_to_price_ratio = avg_rating / avg_price
+  )
+
+
+barplot(
+  category_summary$rating_to_price_ratio,
+  names.arg = category_summary$Category,
+  main = "Rating to Price Ratio by Category",
+  ylab = "Rating to Price Ratio",
+  col =  rainbow(nrow(category_summary)),
+  las = 2  
+)
+```
+10.
+```{r}
+
+ranked_df <- df_combined %>%
+  group_by(Category) %>%
+  arrange(desc(Rating), Price) %>%
+  mutate(Rank = row_number())
+
+
+top_ranked <- ranked_df %>%
+  filter(Rank <= 5)
+
+print(top_ranked)
+
 ```
 
 
 
-g
